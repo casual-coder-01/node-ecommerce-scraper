@@ -1,3 +1,13 @@
+const PQueue = require("p-queue").default;
+
+
+const queue = new PQueue({
+  concurrency: 1,      // max 2 pages at a time
+  intervalCap: 1,      // max 2 requests
+  interval: 800       // per 1 second
+});
+
+
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
@@ -61,17 +71,25 @@ function saveToCsv(data, filePath) {
 }
 
 async function scrapeAllPages() {
-  const allProducts = [];
+const allProducts = [];
+const tasks = [];
 
-  for (let page = 1; page <= TOTAL_PAGES; page++) {
-  try {
-    console.log(`Scraping page ${page}...`);
-    const pageProducts = await scrapePage(page);
-    allProducts.push(...pageProducts);
-  } catch (error) {
-    console.error(`Failed to scrape page ${page}`);
-  }
+for (let page = 1; page <= TOTAL_PAGES; page++) {
+  tasks.push(
+    queue.add(async () => {
+      try {
+        console.log(`Scraping page ${page}...`);
+        const pageProducts = await scrapePage(page);
+        allProducts.push(...pageProducts);
+      } catch (error) {
+        console.error(`Failed to scrape page ${page}`);
+      }
+    })
+  );
 }
+
+await Promise.all(tasks);
+
 
   saveToJson(allProducts, JSON_OUTPUT);
   saveToCsv(allProducts, CSV_OUTPUT);
