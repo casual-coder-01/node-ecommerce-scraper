@@ -18,16 +18,21 @@ async function scrapePage(pageNumber) {
 
   $(".product_pod").each((_, element) => {
     const title = $(element).find("h3 a").attr("title");
-    const price = $(element).find(".price_color").text();
-    const availability = $(element)
-      .find(".availability")
-      .text()
-      .trim();
-    const rating = $(element)
-      .find(".star-rating")
-      .attr("class")
-      .replace("star-rating", "")
-      .trim();
+   const rawPrice = $(element).find(".price_color").text();
+const rawAvailability = $(element)
+  .find(".availability")
+  .text()
+  .trim();
+const rawRating = $(element)
+  .find(".star-rating")
+  .attr("class")
+  .replace("star-rating", "")
+  .trim();
+
+const price = normalizePrice(rawPrice);
+const availability = normalizeAvailability(rawAvailability);
+const rating = normalizeRating(rawRating);
+
     const productUrl =
       "https://books.toscrape.com/" +
       $(element).find("h3 a").attr("href");
@@ -69,6 +74,26 @@ async function scrapeAllPages() {
   console.log(
     `\nSaved ${allProducts.length} products to JSON & CSV successfully`
   );
+}
+ 
+function normalizePrice(priceText) {
+  return Number(priceText.replace("£", ""));
+}
+
+function normalizeRating(ratingText) {
+  const ratingMap = {
+    One: 1,
+    Two: 2,
+    Three: 3,
+    Four: 4,
+    Five: 5,
+  };
+  return ratingMap[ratingText] || null;
+}
+
+function normalizeAvailability(text) {
+  const match = text.match(/\d+/);
+  return match ? Number(match[0]) : 0;
 }
 
 scrapeAllPages();
