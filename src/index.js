@@ -1,13 +1,16 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-
+const fs = require("fs");
+const { Parser } = require("json2csv");
 
 const BASE_URL = "https://books.toscrape.com/catalogue/page-";
 const TOTAL_PAGES = 3;
 
+const JSON_OUTPUT = "data/products.json";
+const CSV_OUTPUT = "data/products.csv";
+
 async function scrapePage(pageNumber) {
   const url = `${BASE_URL}${pageNumber}.html`;
-
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
@@ -41,6 +44,16 @@ async function scrapePage(pageNumber) {
   return products;
 }
 
+function saveToJson(data, filePath) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+}
+
+function saveToCsv(data, filePath) {
+  const parser = new Parser();
+  const csv = parser.parse(data);
+  fs.writeFileSync(filePath, csv, "utf-8");
+}
+
 async function scrapeAllPages() {
   const allProducts = [];
 
@@ -50,8 +63,12 @@ async function scrapeAllPages() {
     allProducts.push(...pageProducts);
   }
 
-  console.log(`\nTotal products scraped: ${allProducts.length}`);
-  console.log(allProducts);
+  saveToJson(allProducts, JSON_OUTPUT);
+  saveToCsv(allProducts, CSV_OUTPUT);
+
+  console.log(
+    `\nSaved ${allProducts.length} products to JSON & CSV successfully`
+  );
 }
 
 scrapeAllPages();
