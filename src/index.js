@@ -1,3 +1,4 @@
+const UserAgent = require("user-agents");
 const PQueue = require("p-queue").default;
 
 
@@ -118,10 +119,26 @@ function normalizeAvailability(text) {
   const match = text.match(/\d+/);
   return match ? Number(match[0]) : 0;
 }
+
+function getRandomHeaders() {
+  const ua = new UserAgent();
+
+  return {
+    "User-Agent": ua.toString(),
+    "Accept-Language": "en-US,en;q=0.9",
+    Accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    Connection: "keep-alive",
+  };
+}
+
 async function fetchWithRetry(url, retries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      return await axios.get(url);
+      return await axios.get(url, {
+      headers: getRandomHeaders(),
+});
+
     } catch (error) {
       console.warn(
         `Attempt ${attempt} failed for ${url} (${error.message})`
