@@ -11,7 +11,8 @@ const CSV_OUTPUT = "data/products.csv";
 
 async function scrapePage(pageNumber) {
   const url = `${BASE_URL}${pageNumber}.html`;
-  const response = await axios.get(url);
+  const response = await fetchWithRetry(url);
+
   const $ = cheerio.load(response.data);
 
   const products = [];
@@ -63,10 +64,14 @@ async function scrapeAllPages() {
   const allProducts = [];
 
   for (let page = 1; page <= TOTAL_PAGES; page++) {
+  try {
     console.log(`Scraping page ${page}...`);
     const pageProducts = await scrapePage(page);
     allProducts.push(...pageProducts);
+  } catch (error) {
+    console.error(`Failed to scrape page ${page}`);
   }
+}
 
   saveToJson(allProducts, JSON_OUTPUT);
   saveToCsv(allProducts, CSV_OUTPUT);
@@ -94,6 +99,23 @@ function normalizeRating(ratingText) {
 function normalizeAvailability(text) {
   const match = text.match(/\d+/);
   return match ? Number(match[0]) : 0;
+}
+async function fetchWithRetry(url, retries = 3, delay = 1000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await axios.get(url);
+    } catch (error) {
+      console.warn(
+        `Attempt ${attempt} failed for ${url} (${error.message})`
+      );
+
+      if (attempt === retries) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
 }
 
 scrapeAllPages();
