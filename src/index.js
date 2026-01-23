@@ -1,3 +1,5 @@
+const config = require("./config");
+
 const UserAgent = require("user-agents");
 const PQueue = require("p-queue").default;
 
@@ -135,13 +137,27 @@ function getRandomHeaders() {
 async function fetchWithRetry(url, retries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      return await axios.get(url, {
-      headers: getRandomHeaders(),
-});
+      const axiosOptions = {
+        headers: getRandomHeaders(),
+      };
 
+      if (config.useProxy) {
+        axiosOptions.proxy = {
+          host: config.proxy.host,
+          port: config.proxy.port,
+          auth: config.proxy.username
+            ? {
+                username: config.proxy.username,
+                password: config.proxy.password,
+              }
+            : undefined,
+        };
+      }
+
+      return await axios.get(url, axiosOptions);
     } catch (error) {
       console.warn(
-        `Attempt ${attempt} failed for ${url} (${error.message})`
+        `Attempt ${attempt} failed for ${url}: ${error.message}`
       );
 
       if (attempt === retries) {
