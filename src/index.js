@@ -134,6 +134,16 @@ function getRandomHeaders() {
   };
 }
 
+function getRandomProxy() {
+  if (!config.proxies || config.proxies.length === 0) {
+    return null;
+  }
+
+  const index = Math.floor(Math.random() * config.proxies.length);
+  return config.proxies[index];
+}
+
+
 async function fetchWithRetry(url, retries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -141,18 +151,23 @@ async function fetchWithRetry(url, retries = 3, delay = 1000) {
         headers: getRandomHeaders(),
       };
 
-      if (config.useProxy) {
-        axiosOptions.proxy = {
-          host: config.proxy.host,
-          port: config.proxy.port,
-          auth: config.proxy.username
-            ? {
-                username: config.proxy.username,
-                password: config.proxy.password,
-              }
-            : undefined,
-        };
-      }
+     if (config.useProxy) {
+  const proxy = getRandomProxy();
+
+  if (proxy) {
+    axiosOptions.proxy = {
+      host: proxy.host,
+      port: proxy.port,
+      auth: proxy.username
+        ? {
+            username: proxy.username,
+            password: proxy.password,
+          }
+        : undefined,
+    };
+  }
+}
+
 
       return await axios.get(url, axiosOptions);
     } catch (error) {
